@@ -1,22 +1,22 @@
 package objects
 
-type user struct{
-	id int
-	token int
+type User struct{
+	ID int
+	Token int
 
 	// Info Pribadi
-	nama string
-	umur int
+	Nama string
+	Umur int
 
 }
 
 type like struct{
-	likedUserId int
-	likedFromUserId int
+	LikedUserId int
+	LikedFromUserId int
 }
 
 type chat struct{
-	fromUserId int
-	toUserId int
-	message string
+	FromUserId int
+	ToUserId int
+	Message string
 }
