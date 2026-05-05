@@ -5,21 +5,169 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-model UserProfile  {
-  user_id      BigInt   @id @default(autoincrement())
-  name_display String?  @db.VarChar
-  bio          String?  @db.Text
-  gender       String?  @db.VarChar
-  coin         BigInt   @default(0)
-  diamond      BigInt   @default(0)
-  created_at   DateTime @default(now()) @db.Timestamptz
-  religion     String?  @db.VarChar
-  location     String?  @db.VarChar
-  is_verified  Boolean  @default(false)
-  mbti         String?  @db.VarChar
-  have_children Boolean @default(false)
+model UserMain {
+  user_id               BigInt                @id(map: "user_pkey") @default(autoincrement())
+  is_verified           Boolean               @default(false)
+  currency_transactions CurrencyTransaction[]
+  matches_as_user1      Match[]               @relation("User1Relation")
+  matches_as_user2      Match[]               @relation("User2Relation")
+  messages_sent         Message[]
+  auth                  UserAuth?
+  background            UserBackground?
+  financial             UserFinancial?
+  likes_received        UserLike[]            @relation("LikedRelation")
+  likes_given           UserLike[]            @relation("LikerRelation")
+  profile               UserProfile?
+  security              UserSecurity?
+  spiritual             UserSpiritual?
+  wallet                UserWallet?
 
   @@map("user_main")
+}
+
+model UserAuth {
+  user_id  BigInt   @id @default(autoincrement())
+  email    String   @db.VarChar
+  password String?  @db.VarChar
+  user     UserMain @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("user_auth")
+}
+
+model UserProfile {
+  user_id         BigInt    @id @default(autoincrement())
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  name_display    String?   @default("") @db.VarChar
+  bio             String?   @default("")
+  gender          String?   @default("") @db.VarChar
+  location        String?   @default("") @db.VarChar
+  mbti            String?   @default("") @db.VarChar
+  race            String?   @default("") @db.VarChar
+  place_of_birth  String?   @default("") @db.VarChar
+  date_of_birth   DateTime? @db.Date
+  marriage_status String?   @default("") @db.VarChar
+  body_height     Int?      @db.SmallInt
+  body_weight     Int?      @db.SmallInt
+  user            UserMain  @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("user_profile")
+}
+
+model UserBackground {
+  user_id            BigInt   @id @default(autoincrement())
+  sibling_order      String   @default("") @db.VarChar
+  congenital_disease String?  @default("") @db.VarChar
+  father_status      Boolean? @default(true)
+  mother_status      Boolean? @default(true)
+  have_children      Boolean? @default(false)
+  father_age         Int?     @db.SmallInt
+  mother_age         Int?     @db.SmallInt
+  user               UserMain @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("user_background")
+}
+
+model UserFinancial {
+  user_id          BigInt   @id @default(autoincrement())
+  wages            String   @db.VarChar
+  location_type    String?  @db.VarChar
+  motorcycle_count Int?     @default(0) @db.SmallInt
+  car_count        Int?     @default(0) @db.SmallInt
+  user             UserMain @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("user_financial")
+}
+
+model UserSpiritual {
+  user_id             BigInt   @id @default(autoincrement())
+  church_denomination String   @default("") @db.VarChar
+  church_ministry     String?  @default("'::character varying") @db.VarChar
+  mentor_name         String?  @default("") @db.VarChar
+  mentor_number       String?  @db.VarChar
+  religion            String?  @db.VarChar
+  user                UserMain @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("user_spiritual")
+}
+
+model UserSecurity {
+  user_id      BigInt   @id @default(autoincrement())
+  full_name    String?  @db.VarChar
+  national_id  String?  @db.VarChar
+  full_address String?
+  user         UserMain @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("user_security")
+}
+
+model UserWallet {
+  user_id       BigInt   @id @default(autoincrement())
+  referral_code String?  @db.VarChar
+  coin          BigInt
+  diamond       BigInt?
+  user          UserMain @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("user_wallet")
+}
+
+model UserLike {
+  like_id  BigInt    @id @default(autoincrement())
+  liker_id BigInt
+  liked_id BigInt?
+  status   String?   @default("") @db.VarChar
+  liked    UserMain? @relation("LikedRelation", fields: [liked_id], references: [user_id], onDelete: Cascade)
+  liker    UserMain  @relation("LikerRelation", fields: [liker_id], references: [user_id], onDelete: Cascade)
+
+  @@map("user_likes")
+}
+
+model Match {
+  match_id   BigInt    @id @default(autoincrement())
+  user1_id   BigInt?
+  matched_at DateTime  @default(now()) @db.Timestamptz(6)
+  user2_id   BigInt?
+  user1      UserMain? @relation("User1Relation", fields: [user1_id], references: [user_id], onDelete: Cascade)
+  user2      UserMain? @relation("User2Relation", fields: [user2_id], references: [user_id], onDelete: Cascade)
+  messages   Message[]
+
+  @@map("matches")
+}
+
+model Message {
+  message_id BigInt    @id @default(autoincrement())
+  match_id   BigInt
+  sender_id  BigInt?
+  content    String?   @default("")
+  is_read    Boolean?  @default(false)
+  sent_at    DateTime? @default(now()) @db.Timestamp(6)
+  match      Match     @relation(fields: [match_id], references: [match_id], onDelete: Cascade)
+  sender     UserMain? @relation(fields: [sender_id], references: [user_id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model CurrencyTransaction {
+  transaction_id BigInt   @id @default(autoincrement())
+  user_id        BigInt
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  amount         BigInt?
+  currency_type  String?  @default("") @db.VarChar
+  reference_id   Int?     @db.SmallInt
+  user           UserMain @relation(fields: [user_id], references: [user_id], onDelete: SetNull, onUpdate: Restrict)
+
+  @@map("currency_transactions")
+}
+
+model Vendor {
+  vendor_id     BigInt   @id @default(autoincrement())
+  name          String?  @default("") @db.VarChar
+  category      String?  @db.VarChar
+  address       String?
+  contact_phone String?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("vendors")
 }

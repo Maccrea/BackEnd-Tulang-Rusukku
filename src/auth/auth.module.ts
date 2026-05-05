@@ -1,18 +1,23 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
-// import { UsersModule } from '../users/users.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
-    // UsersModule,
+    UsersModule,
     PassportModule,
-    JwtModule.register({
-      secret: 'YOUR_SUPER_SECRET_KEY', // Again, use ConfigModule in prod
-      signOptions: { expiresIn: '7d' },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '7d' },
+      }),
     }),
   ],
   providers: [AuthService, JwtStrategy],
