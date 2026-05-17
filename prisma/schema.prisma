@@ -10,6 +10,7 @@ datasource db {
 
 model UserMain {
   user_id               BigInt                @id(map: "user_pkey") @default(autoincrement())
+  created_at            DateTime              @default(now()) @db.Timestamptz(6) 
   is_verified           Boolean               @default(false)
   currency_transactions CurrencyTransaction[]
   matches_as_user1      Match[]               @relation("User1Relation")
@@ -29,16 +30,17 @@ model UserMain {
 }
 
 model UserAuth {
-  user_id  BigInt   @id @default(autoincrement())
-  email    String   @db.VarChar
+  user_id  BigInt   @id
+  email    String   @unique @db.VarChar
   password String?  @db.VarChar
-  user     UserMain @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  provider String   @default("email") @db.VarChar
+  user     UserMain @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("user_auth")
 }
 
 model UserProfile {
-  user_id         BigInt    @id @default(autoincrement())
+  user_id         BigInt    @id
   created_at      DateTime  @default(now()) @db.Timestamptz(6)
   name_display    String?   @default("") @db.VarChar
   bio             String?   @default("")
@@ -51,13 +53,13 @@ model UserProfile {
   marriage_status String?   @default("") @db.VarChar
   body_height     Int?      @db.SmallInt
   body_weight     Int?      @db.SmallInt
-  user            UserMain  @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  user            UserMain  @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("user_profile")
 }
 
 model UserBackground {
-  user_id            BigInt   @id @default(autoincrement())
+  user_id            BigInt   @id
   sibling_order      String   @default("") @db.VarChar
   congenital_disease String?  @default("") @db.VarChar
   father_status      Boolean? @default(true)
@@ -65,85 +67,86 @@ model UserBackground {
   have_children      Boolean? @default(false)
   father_age         Int?     @db.SmallInt
   mother_age         Int?     @db.SmallInt
-  user               UserMain @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  user               UserMain @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("user_background")
 }
 
 model UserFinancial {
-  user_id          BigInt   @id @default(autoincrement())
+  user_id          BigInt   @id
   wages            String   @db.VarChar
   location_type    String?  @db.VarChar
   motorcycle_count Int?     @default(0) @db.SmallInt
   car_count        Int?     @default(0) @db.SmallInt
-  user             UserMain @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  user             UserMain @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("user_financial")
 }
 
 model UserSpiritual {
-  user_id             BigInt   @id @default(autoincrement())
+  user_id             BigInt   @id
   church_denomination String   @default("") @db.VarChar
-  church_ministry     String?  @default("'::character varying") @db.VarChar
+  church_ministry     String?  @default("") @db.VarChar
   mentor_name         String?  @default("") @db.VarChar
   mentor_number       String?  @db.VarChar
   religion            String?  @db.VarChar
-  user                UserMain @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  user                UserMain @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("user_spiritual")
 }
 
 model UserSecurity {
-  user_id      BigInt   @id @default(autoincrement())
+  user_id      BigInt   @id 
   full_name    String?  @db.VarChar
   national_id  String?  @db.VarChar
   full_address String?
-  user         UserMain @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  user         UserMain @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("user_security")
 }
 
 model UserWallet {
-  user_id       BigInt   @id @default(autoincrement())
+  user_id       BigInt   @id 
   referral_code String?  @db.VarChar
   coin          BigInt
   diamond       BigInt?
-  user          UserMain @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  user          UserMain @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("user_wallet")
 }
 
 model UserLike {
-  like_id  BigInt    @id @default(autoincrement())
+  like_id  BigInt   @id @default(autoincrement())
   liker_id BigInt
-  liked_id BigInt?
-  status   String?   @default("") @db.VarChar
-  liked    UserMain? @relation("LikedRelation", fields: [liked_id], references: [user_id], onDelete: Cascade)
-  liker    UserMain  @relation("LikerRelation", fields: [liker_id], references: [user_id], onDelete: Cascade)
+  liked_id BigInt   
+  status   String?  @default("") @db.VarChar
+  liked    UserMain @relation("LikedRelation", fields: [liked_id], references: [user_id], onDelete: Cascade)
+  liker    UserMain @relation("LikerRelation", fields: [liker_id], references: [user_id], onDelete: Cascade)
 
+  @@unique([liker_id, liked_id])
   @@map("user_likes")
 }
 
 model Match {
-  match_id   BigInt    @id @default(autoincrement())
-  user1_id   BigInt?
-  matched_at DateTime  @default(now()) @db.Timestamptz(6)
-  user2_id   BigInt?
-  user1      UserMain? @relation("User1Relation", fields: [user1_id], references: [user_id], onDelete: Cascade)
-  user2      UserMain? @relation("User2Relation", fields: [user2_id], references: [user_id], onDelete: Cascade)
+  match_id   BigInt   @id @default(autoincrement())
+  user1_id   BigInt   
+  user2_id   BigInt 
+  matched_at DateTime @default(now()) @db.Timestamptz(6)
+  user1      UserMain @relation("User1Relation", fields: [user1_id], references: [user_id], onDelete: Cascade)
+  user2      UserMain @relation("User2Relation", fields: [user2_id], references: [user_id], onDelete: Cascade)
   messages   Message[]
 
   @@map("matches")
 }
 
 model Message {
-  message_id BigInt    @id @default(autoincrement())
+  message_id BigInt   @id @default(autoincrement())
   match_id   BigInt
   sender_id  BigInt?
-  content    String?   @default("")
-  is_read    Boolean?  @default(false)
-  sent_at    DateTime? @default(now()) @db.Timestamp(6)
-  match      Match     @relation(fields: [match_id], references: [match_id], onDelete: Cascade)
+  content    String?  @default("")
+  is_read    Boolean? @default(false)
+  sent_at    DateTime @default(now()) @db.Timestamptz(6)
+  match      Match    @relation(fields: [match_id], references: [match_id], onDelete: Cascade)
   sender     UserMain? @relation(fields: [sender_id], references: [user_id], onDelete: Cascade)
 
   @@map("messages")
@@ -156,7 +159,7 @@ model CurrencyTransaction {
   amount         BigInt?
   currency_type  String?  @default("") @db.VarChar
   reference_id   Int?     @db.SmallInt
-  user           UserMain @relation(fields: [user_id], references: [user_id], onDelete: SetNull, onUpdate: Restrict)
+  user           UserMain @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: Restrict)
 
   @@map("currency_transactions")
 }
